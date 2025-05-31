@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>امتحان إدارة قواعد البيانات</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Visualization & Content Choices:
+        - Report Info: Core concepts from Chapter 5 (Information Accuracy, Data Hierarchy, Traditional Problems, DBMS Models, Components) -> Goal: Assess Understanding -> Viz: Textual questions with radio button choices. -> Interaction: Click radio button to select, click "Next" to advance, click "Submit" to finish, click "Previous" to go back. -> Justification: Standard quiz format for knowledge assessment, enhanced with multi-question pages and navigation for better user experience. Method: HTML, Tailwind, Vanilla JS.
+        - Report Info: Exam Results -> Goal: Inform -> Viz: Score display, list of questions with user's answer and correct answer. -> Interaction: Click "شرح الإجابة الصحيحة ✨" button for LLM-generated explanation of incorrect answers. -> Justification: Provides clear feedback on performance and enhances learning through AI-powered explanations. Method: HTML, Tailwind, Vanilla JS, Gemini API.
+        - CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <style>
+        body {
+            font-family: 'system-ui', 'sans-serif';
+        }
+        .section-hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white shadow-lg rounded-lg p-6 md:p-8 w-full max-w-2xl">
+
+        <div id="intro-section" class="text-center">
+            <h1 class="text-3xl font-bold text-indigo-700 mb-2">امتحان في إدارة قواعد البيانات</h1>
+            <p class="text-md text-gray-500 mb-4">من إعداد الطالب: قيس طلال غالب الجازي</p>
+            <p class="text-lg text-gray-600 mb-6">اختبر فهمك للمفاهيم الأساسية في الفصل الخامس.</p>
+            <button id="start-exam-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-300">
+                ابدأ الامتحان
+            </button>
+        </div>
+
+        <div id="exam-section" class="section-hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-semibold text-indigo-600">الأسئلة <span id="current-question-range"></span> من <span id="total-questions"></span></h2>
+                <div class="text-xl font-bold text-red-600">الوقت المتبقي: <span id="timer-display"></span></div>
+            </div>
+            <div id="questions-container" class="space-y-8">
+                </div>
+            <div class="flex justify-between mt-6">
+                <button id="prev-question-btn" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg shadow-sm transition duration-300 section-hidden">
+                    السؤال السابق
+                </button>
+                <button id="next-question-btn" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg shadow-sm transition duration-300">
+                    السؤال التالي
+                </button>
+                <button id="submit-exam-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-sm transition duration-300 section-hidden">
+                    إنهاء الامتحان
+                </button>
+            </div>
+        </div>
+
+        <div id="results-section" class="section-hidden">
+            <h2 class="text-3xl font-bold text-indigo-700 mb-4 text-center">نتائج الامتحان</h2>
+            <p class="text-xl text-gray-700 mb-6 text-center">لقد حصلت على <span id="score-display" class="font-bold text-indigo-600"></span> من <span id="total-score-display" class="font-bold text-indigo-600"></span></p>
+            <div id="results-details" class="space-y-4">
+                </div>
+            <button id="restart-exam-btn" class="mt-8 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-300">
+                إعادة الامتحان
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        const questions = [
+            {
+                question: "ما هو الغرض الأساسي من أنظمة المعلومات وفقاً للفصل؟",
+                answers: [
+                    "تخزين البيانات فقط.",
+                    "تزويد المستخدمين بالمعلومات الدقيقة ذات الصلة في الوقت المناسب.",
+                    "إنشاء تقارير مالية معقدة.",
+                    "إدارة الموظفين فقط."
+                ],
+                correctAnswer: "تزويد المستخدمين بالمعلومات الدقيقة ذات الصلة في الوقت المناسب."
+            },
+            {
+                question: "كيف تُعرّف المعلومات الدقيقة في سياق الفصل؟",
+                answers: [
+                    "المعلومات التي تحتوي على تكرار.",
+                    "المعلومات الخالية من الأخطاء مثل التكرار وعدم التنسيق.",
+                    "المعلومات التي تتوفر متأخرة.",
+                    "المعلومات غير المفيدة لصانعي القرار."
+                ],
+                correctAnswer: "المعلومات الخالية من الأخطاء مثل التكرار وعدم التنسيق."
+            },
+            {
+                question: "ما هي المشكلة التي تنشأ عن وجود نفس المعلومة في أكثر من مكان (التكرار)؟",
+                answers: [
+                    "زيادة كفاءة النظام.",
+                    "عدم تناسق البيانات.",
+                    "تحسين أمن الملفات.",
+                    "سهولة استحداث التقارير."
+                ],
+                correctAnswer: "عدم تناسق البيانات."
+            },
+            {
+                question: "ما هي أصغر وحدة تخزين يمكن للحاسوب تخزينها؟",
+                answers: [
+                    "البايت (Byte)",
+                    "الحقل (Field)",
+                    "البت (Bit)",
+                    "السجل (Record)"
+                ],
+                correctAnswer: "البت (Bit)"
+            },
+            {
+                question: "ما هو الترتيب الصحيح لهيكلية البيانات من الأصغر إلى الأكبر؟",
+                answers: [
+                    "بت، بايت، حقل، سجل، ملف، قاعدة بيانات.",
+                    "بايت، بت، سجل، حقل، ملف، قاعدة بيانات.",
+                    "قاعدة بيانات، ملف، سجل، حقل، بايت، بت.",
+                    "حقل، سجل، ملف، بايت، بت، قاعدة بيانات."
+                ],
+                correctAnswer: "بت، بايت، حقل، سجل، ملف، قاعدة بيانات."
+            },
+            {
+                question: "ماذا يصف الكيان (Entity)؟",
+                answers: [
+                    "خاصية للبيانات.",
+                    "شخص، مكان، شيء، أو حدث يمكن وصفها بمعلومات محددة.",
+                    "علاقة بين جداول.",
+                    "لغة برمجة."
+                ],
+                correctAnswer: "شخص، مكان، شيء، أو حدث يمكن وصفها بمعلومات محددة."
+            },
+            {
+                question: "ماذا تسمى كل خاصية يمكن أن تصف بها الكينونة؟",
+                answers: [
+                    "سجل.",
+                    "ملف.",
+                    "سمة (Attribute).",
+                    "بايت."
+                ],
+                correctAnswer: "سمة (Attribute)."
+            },
+            {
+                question: "ماذا يعني 'ارتباط البرنامج مع البيانات' في الأنظمة التقليدية؟",
+                answers: [
+                    "أن البرامج يمكنها الوصول إلى البيانات بسهولة.",
+                    "أن أي تغيير في البرمجيات يؤثر على البيانات والعكس صحيح.",
+                    "أن البيانات مستقلة عن البرامج.",
+                    "أن البرامج تستخدم لغات استعلام قياسية."
+                ],
+                correctAnswer: "أن أي تغيير في البرمجيات يؤثر على البيانات والعكس صحيح."
+            },
+            {
+                question: "لماذا تعتبر 'صعوبة استحداث تقارير متنوعة وغير متوقعة' مشكلة في بيئة الملفات التقليدية؟",
+                answers: [
+                    "لأنها تعتمد على المبرمج وجهود برمجة كبيرة.",
+                    "لأن البيانات مركزية.",
+                    "لأنها توفر مرونة عالية.",
+                    "لأنها تستخدم SQL."
+                ],
+                correctAnswer: "لأنها تعتمد على المبرمج وجهود برمجة كبيرة."
+            },
+            {
+                question: "لماذا يصعب تطبيق قواعد أمنية على البيانات في أنظمة الملفات التقليدية؟",
+                answers: [
+                    "لأن البيانات مركزية.",
+                    "لأنها تعتمد على المبرمج لضمان الأمن وصعوبة تطبيقها برمجياً.",
+                    "لأنها تستخدم نظام إدارة قواعد البيانات.",
+                    "لأنها توفر مناظير منطقية متعددة."
+                ],
+                correctAnswer: "لأنها تعتمد على المبرمج لضمان الأمن وصعوبة تطبيقها برمجياً."
+            },
+            {
+                question: "ما هي المشكلة التي تنشأ عن توزيع المعلومات في ملفات ومواقع مختلفة وعدم ارتباطها ببعضها في الأنظمة التقليدية؟",
+                answers: [
+                    "سهولة استحداث التقارير.",
+                    "سهولة المشاركة في البيانات.",
+                    "صعوبة المشاركة في البيانات.",
+                    "زيادة أمن الملفات."
+                ],
+                correctAnswer: "صعوبة المشاركة في البيانات."
+            },
+            {
+                question: "كيف تُعرّف قاعدة البيانات كحل لمشاكل الأنظمة التقليدية؟",
+                answers: [
+                    "مجموعة من البيانات العشوائية.",
+                    "مجموعة من البيانات المنظمة والمترابطة لتخدم التطبيقات بواسطة مركزية التحكم وعدم تكرار البيانات.",
+                    "ملف واحد كبير يحتوي على جميع البيانات.",
+                    "برنامج حاسوبي خاص بكل تطبيق."
+                ],
+                correctAnswer: "مجموعة من البيانات المنظمة والمترابطة لتخدم التطبيقات بواسطة مركزية التحكم وعدم تكرار البيانات."
+            },
+            {
+                question: "ما هو تعريف نظام إدارة قاعدة البيانات (DBMS)؟",
+                answers: [
+                    "مجموعة من الملفات غير المترابطة.",
+                    "البرنامج أو مجموعة البرامج التي تدير قاعدة البيانات.",
+                    "لغة برمجة تستخدم لإنشاء التقارير.",
+                    "جهاز تخزين البيانات."
+                ],
+                correctAnswer: "البرنامج أو مجموعة البرامج التي تدير قاعدة البيانات."
+            },
+            {
+                question: "ما هما المنظوران اللذان يفصل بينهما نظام إدارة قاعدة البيانات (DBMS)؟",
+                answers: [
+                    "المنظور القديم والمنظور الحديث.",
+                    "منظور البيانات المنطقي والبيانات المادية.",
+                    "منظور المستخدم ومنظور المبرمج.",
+                    "منظور الإدخال ومنظور الإخراج."
+                ],
+                correctAnswer: "منظور البيانات المنطقي والبيانات المادية."
+            },
+            {
+                question: "كيف تمثل البيانات في النموذج العلائقي (Relational Model)؟",
+                answers: [
+                    "على شكل شجرة.",
+                    "على شكل شبكة معقدة.",
+                    "على شكل جداول ذات بعدين تسمى العلاقات.",
+                    "على شكل كائنات."
+                ],
+                correctAnswer: "على شكل جداول ذات بعدين تسمى العلاقات."
+            },
+            {
+                question: "ما هو تعريف المفتاح الأساسي (Primary Key) في النموذج العلائقي؟",
+                answers: [
+                    "حقل يربط بين جدولين.",
+                    "حقل قيمته تتكرر في السجلات المختلفة.",
+                    "حقل يميز بشكل منفرد كل سجل على حدى ولا يمكن أن يكون فارغاً.",
+                    "حقل يستخدم لتخزين الصور فقط."
+                ],
+                correctAnswer: "حقل يميز بشكل منفرد كل سجل على حدى ولا يمكن أن يكون فارغاً."
+            },
+            {
+                question: "ما هو تعريف المفتاح الأجنبي (Foreign Key) في النموذج العلائقي؟",
+                answers: [
+                    "حقل يميز السجل بشكل فريد في نفس الجدول.",
+                    "حقل لا يمكن أن تكون قيمته فارغة.",
+                    "حقل في جدول يشير إلى المفتاح الأساسي في جدول آخر.",
+                    "حقل يستخدم لترتيب البيانات."
+                ],
+                correctAnswer: "حقل في جدول يشير إلى المفتاح الأساسي في جدول آخر."
+            },
+            {
+                question: "كيف تنظم البيانات في النموذج الهرمي؟",
+                answers: [
+                    "على شكل جداول.",
+                    "على شكل شبكة معقدة.",
+                    "على شكل شجرة، حيث كل سجل ابن له أب واحد فقط.",
+                    "على شكل كائنات مستقلة."
+                ],
+                correctAnswer: "على شكل شجرة، حيث كل سجل ابن له أب واحد فقط."
+            },
+            {
+                question: "ما هو العيب الرئيسي للنموذج الهرمي؟",
+                answers: [
+                    "سهولة استرجاع البيانات.",
+                    "عدم تكرار البيانات.",
+                    "صعوبة استرجاع بعض البيانات التي لا تتبع المسار الهرمي، وتكرار السجلات الأبناء.",
+                    "قدرته على تخزين الصور."
+                ],
+                correctAnswer: "صعوبة استرجاع بعض البيانات التي لا تتبع المسار الهرمي، وتكرار السجلات الأبناء."
+            },
+            {
+                question: "ما هي الميزة الرئيسية لنموذج شبكة قاعدة البيانات مقارنة بالنموذج الهرمي؟",
+                answers: [
+                    "أنه أبسط في البناء.",
+                    "إمكانية تخزين السجلات بدون تكرار والسماح بعلاقات متعدد-إلى-متعدد.",
+                    "أنه أبطأ في المعالجة.",
+                    "أنه يعتمد على المفاتيح الأساسية فقط."
+                ],
+                correctAnswer: "إمكانية تخزين السجلات بدون تكرار والسماح بعلاقات متعدد-إلى-متعدد."
+            },
+            {
+                question: "ما هو العيب الرئيسي لنموذج شبكة قاعدة البيانات الذي حد من استخدامه؟",
+                answers: [
+                    "بساطته الشديدة.",
+                    "قدرته على تخزين أنواع بيانات معقدة.",
+                    "بناء وتنظيم معقد، وعملية استرجاع البيانات ليست سهلة.",
+                    "عدم وجود مفاتيح أجنبية."
+                ],
+                correctAnswer: "بناء وتنظيم معقد، وعملية استرجاع البيانات ليست سهلة."
+            },
+            {
+                question: "ما هي أنواع البيانات التي يتفوق نظام إدارة قاعدة البيانات الشيئية (OODBMS) في تخزينها واسترجاعها؟",
+                answers: [
+                    "الأرقام والحروف فقط.",
+                    "الصور، الصوتيات، والفيديو.",
+                    "الجداول ذات البعدين.",
+                    "السجلات الهرمية."
+                ],
+                correctAnswer: "الصور، الصوتيات، والفيديو."
+            },
+            {
+                question: "قاعدة البيانات التي تدعم مستخدم واحد في وحدة الزمن تسمى:",
+                answers: [
+                    "قاعدة بيانات موزعة.",
+                    "قاعدة بيانات متعددة المستخدمين.",
+                    "قاعدة بيانات مخصصة لمستخدم واحد (Single User Database).",
+                    "مستودع بيانات."
+                ],
+                correctAnswer: "قاعدة بيانات مخصصة لمستخدم واحد (Single User Database)."
+            },
+            {
+                question: "قاعدة البيانات المتعددة المستخدمين التي يستخدمها مجموعة صغيرة من المستخدمين أو قسم واحد تسمى:",
+                answers: [
+                    "قاعدة بيانات للمشاريع الكبيرة.",
+                    "قاعدة بيانات مركزية.",
+                    "قاعدة بيانات مخصصة لمجموعة عمل (Workgroup Database).",
+                    "قاعدة بيانات تشغيلية."
+                ],
+                correctAnswer: "قاعدة بيانات مخصصة لمجموعة عمل (Workgroup Database)."
+            },
+            {
+                question: "قاعدة البيانات التي تخزن جميع البيانات في موقع واحد تسمى:",
+                answers: [
+                    "قاعدة بيانات موزعة.",
+                    "قاعدة بيانات مركزية (Centralized Database).",
+                    "مستودع بيانات.",
+                    "قاعدة بيانات متعددة المستخدمين."
+                ],
+                correctAnswer: "قاعدة بيانات مركزية (Centralized Database)."
+            },
+            {
+                question: "ما هو الغرض الأساسي من مستودع البيانات (Data Warehouse)؟",
+                answers: [
+                    "معالجة العمليات اليومية بسرعة.",
+                    "تخزين البيانات التي تستخدم لاتخاذ قرارات قصيرة وبعيدة الأجل.",
+                    "تخزين البيانات في موقع واحد فقط.",
+                    "دعم مستخدم واحد فقط."
+                ],
+                correctAnswer: "تخزين البيانات التي تستخدم لاتخاذ قرارات قصيرة وبعيدة الأجل."
+            },
+            {
+                question: "ما هي اللغة التي تستخدم لتعريف بنية محتويات قاعدة البيانات (مثل بناء الجداول وتعريف خصائص الحقول)؟",
+                answers: [
+                    "لغة معالجة البيانات (DML).",
+                    "لغة الاستعلام الهيكلية (SQL).",
+                    "لغة تعريف البيانات (DDL).",
+                    "لغة البرمجة C++."
+                ],
+                correctAnswer: "لغة تعريف البيانات (DDL)."
+            },
+            {
+                question: "ماذا يحتوي قاموس البيانات (Data Dictionary)؟",
+                answers: [
+                    "بيانات العملاء فقط.",
+                    "جميع المعلومات المتعلقة ببناء قاعدة البيانات (Metadata).",
+                    "التقارير النهائية فقط.",
+                    "البرامج التطبيقية."
+                ],
+                correctAnswer: "جميع المعلومات المتعلقة ببناء قاعدة البيانات (Metadata)."
+            },
+            {
+                question: "ما هي اللغة القياسية المستخدمة للتفاعل مع قواعد البيانات المترابطة لإضافة، تغيير، مسح، واسترجاع البيانات؟",
+                answers: [
+                    "لغة جافا (Java).",
+                    "لغة بايثون (Python).",
+                    "لغة الاستعلام الهيكلية (SQL).",
+                    "لغة HTML."
+                ],
+                correctAnswer: "لغة الاستعلام الهيكلية (SQL)."
+            },
+            {
+                question: "أي من الأوامر التالية يستخدم لاسترجاع البيانات في SQL؟",
+                answers: [
+                    "INSERT",
+                    "UPDATE",
+                    "DELETE",
+                    "SELECT"
+                ],
+                correctAnswer: "SELECT"
+            }
+        ];
+
+        const questionsPerPage = 3; // Number of questions to display per page
+        let currentQuestionPageIndex = 0; // Tracks the starting index of the current page of questions
+        let userAnswers = [];
+        let score = 0;
+        let timerInterval; // Variable to hold the timer interval
+        const examDuration = 60 * 60; // 60 minutes in seconds (1 hour)
+        let timeLeft = examDuration;
+
+        const introSection = document.getElementById('intro-section');
+        const examSection = document.getElementById('exam-section');
+        const resultsSection = document.getElementById('results-section');
+
+        const startExamBtn = document.getElementById('start-exam-btn');
+        const currentQuestionRangeSpan = document.getElementById('current-question-range');
+        const totalQuestionsSpan = document.getElementById('total-questions');
+        const questionsContainer = document.getElementById('questions-container'); // New container for multiple questions
+        const prevQuestionBtn = document.getElementById('prev-question-btn');
+        const nextQuestionBtn = document.getElementById('next-question-btn');
+        const submitExamBtn = document.getElementById('submit-exam-btn');
+        const timerDisplay = document.getElementById('timer-display');
+
+        const scoreDisplay = document.getElementById('score-display');
+        const totalScoreDisplay = document.getElementById('total-score-display');
+        const resultsDetails = document.getElementById('results-details');
+        const restartExamBtn = document.getElementById('restart-exam-btn');
+
+        totalQuestionsSpan.textContent = questions.length;
+        totalScoreDisplay.textContent = questions.length;
+
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+        }
+
+        function startTimer() {
+            timeLeft = examDuration; // Reset timer on start
+            timerDisplay.textContent = formatTime(timeLeft);
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerDisplay.textContent = formatTime(timeLeft);
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    autoSubmitExam();
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+        }
+
+        function autoSubmitExam() {
+            saveCurrentPageAnswers();
+            calculateResults();
+            displayResults();
+            // In a real app, you might show a modal here indicating time ran out
+        }
+
+        function startExam() {
+            introSection.classList.add('section-hidden');
+            examSection.classList.remove('section-hidden');
+            currentQuestionPageIndex = 0;
+            userAnswers = Array(questions.length).fill(null); // Initialize user answers array
+            score = 0;
+            loadQuestionsPage();
+            startTimer(); // Start the timer when the exam begins
+        }
+
+        function loadQuestionsPage() {
+            questionsContainer.innerHTML = ''; // Clear previous questions
+            const startIdx = currentQuestionPageIndex;
+            const endIdx = Math.min(startIdx + questionsPerPage, questions.length);
+
+            for (let i = startIdx; i < endIdx; i++) {
+                const currentQuestion = questions[i];
+                const questionDiv = document.createElement('div');
+                questionDiv.className = 'mb-6 p-4 border border-gray-200 rounded-lg bg-white shadow-sm';
+                questionDiv.innerHTML = `
+                    <p class="text-xl font-semibold mb-4">السؤال ${i + 1}. ${currentQuestion.question}</p>
+                    <div id="answers-container-${i}" class="space-y-3"></div>
+                `;
+                questionsContainer.appendChild(questionDiv);
+
+                const answersContainerForQuestion = document.getElementById(`answers-container-${i}`);
+                currentQuestion.answers.forEach((answer, ansIndex) => {
+                    const answerDiv = document.createElement('div');
+                    answerDiv.className = 'flex items-center p-3 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 transition duration-150';
+                    
+                    const radioInput = document.createElement('input');
+                    radioInput.type = 'radio';
+                    radioInput.name = `question-${i}-answer`; // Unique name for each question's radio group
+                    radioInput.value = answer;
+                    radioInput.id = `answer-q${i}-opt${ansIndex}`;
+                    radioInput.className = 'form-radio h-5 w-5 text-indigo-600 mr-3';
+                    
+                    // Pre-select if user has answered this question before
+                    if (userAnswers[i] === answer) {
+                        radioInput.checked = true;
+                    }
+
+                    const label = document.createElement('label');
+                    label.htmlFor = `answer-q${i}-opt${ansIndex}`;
+                    label.className = 'text-lg text-gray-700 flex-1 cursor-pointer';
+                    label.textContent = answer;
+
+                    answerDiv.appendChild(radioInput);
+                    answerDiv.appendChild(label);
+                    answersContainerForQuestion.appendChild(answerDiv);
+                });
+            }
+
+            // Update question range display
+            currentQuestionRangeSpan.textContent = `${startIdx + 1}-${endIdx}`;
+
+            // Manage button visibility
+            if (currentQuestionPageIndex === 0) {
+                prevQuestionBtn.classList.add('section-hidden');
+            } else {
+                prevQuestionBtn.classList.remove('section-hidden');
+            }
+
+            if (endIdx >= questions.length) { // If it's the last page
+                nextQuestionBtn.classList.add('section-hidden');
+                submitExamBtn.classList.remove('section-hidden');
+            } else {
+                nextQuestionBtn.classList.remove('section-hidden');
+                submitExamBtn.classList.add('section-hidden');
+            }
+        }
+
+        function saveCurrentPageAnswers() {
+            const startIdx = currentQuestionPageIndex;
+            const endIdx = Math.min(startIdx + questionsPerPage, questions.length);
+
+            for (let i = startIdx; i < endIdx; i++) {
+                const selectedAnswer = document.querySelector(`input[name="question-${i}-answer"]:checked`);
+                if (selectedAnswer) {
+                    userAnswers[i] = selectedAnswer.value;
+                } else {
+                    userAnswers[i] = null; // Store null if no answer selected
+                }
+            }
+        }
+
+        function nextQuestionPage() {
+            saveCurrentPageAnswers();
+            currentQuestionPageIndex += questionsPerPage;
+
+            if (currentQuestionPageIndex < questions.length) {
+                loadQuestionsPage();
+            } else {
+                calculateResults();
+                displayResults();
+            }
+        }
+
+        function prevQuestionPage() {
+            saveCurrentPageAnswers();
+            currentQuestionPageIndex -= questionsPerPage;
+
+            if (currentQuestionPageIndex >= 0) {
+                loadQuestionsPage();
+            } else {
+                currentQuestionPageIndex = 0; // Should not go below 0
+                loadQuestionsPage();
+            }
+        }
+
+        function calculateResults() {
+            score = 0;
+            questions.forEach((q, index) => {
+                if (userAnswers[index] === q.correctAnswer) {
+                    score++;
+                }
+            });
+        }
+
+        async function getExplanation(questionText, correctAnswer, userAnswer, explanationElement) {
+            explanationElement.innerHTML = '<p class="text-gray-500 mt-2">جاري تحميل الشرح... ⏳</p>';
+            let chatHistory = [];
+            const prompt = `اشرح لماذا الإجابة الصحيحة على السؤال '${questionText}' هي '${correctAnswer}'، مع الأخذ في الاعتبار أن الإجابة الخاطئة كانت '${userAnswer}'. اجعل الشرح موجزاً ومفيداً.`;
+            chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+            const payload = { contents: chatHistory };
+            const apiKey = ""; // If you want to use models other than gemini-2.0-flash or imagen-3.0-generate-002, provide an API key here. Otherwise, leave this as-is.
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const text = result.candidates[0].content.parts[0].text;
+                    explanationElement.innerHTML = `<p class="text-gray-700 mt-2">${text}</p>`;
+                } else {
+                    explanationElement.innerHTML = '<p class="text-red-500 mt-2">عذرًا، لم أتمكن من الحصول على شرح. 😔</p>';
+                }
+            } catch (error) {
+                console.error('Error fetching explanation:', error);
+                explanationElement.innerHTML = '<p class="text-red-500 mt-2">حدث خطأ أثناء تحميل الشرح. 😔</p>';
+            }
+        }
+
+
+        function displayResults() {
+            stopTimer(); // Stop the timer when results are displayed
+            examSection.classList.add('section-hidden');
+            resultsSection.classList.remove('section-hidden');
+            scoreDisplay.textContent = score;
+
+            resultsDetails.innerHTML = ''; // Clear previous results
+
+            questions.forEach((q, index) => {
+                const resultItem = document.createElement('div');
+                resultItem.className = 'p-4 rounded-lg shadow-sm';
+                
+                const isCorrect = userAnswers[index] === q.correctAnswer;
+                resultItem.classList.add(isCorrect ? 'bg-green-50' : 'bg-red-50');
+                
+                let explanationButtonHtml = '';
+                let explanationDivId = `explanation-${index}`;
+                if (!isCorrect) {
+                    explanationButtonHtml = `
+                        <button class="bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-bold py-1 px-3 rounded-md mt-2" onclick="getExplanation('${q.question.replace(/'/g, "\\'")}', '${q.correctAnswer.replace(/'/g, "\\'")}', '${userAnswers[index] ? userAnswers[index].replace(/'/g, "\\'") : 'لم يتم الإجابة'}', document.getElementById('${explanationDivId}'))">
+                            شرح الإجابة الصحيحة ✨
+                        </button>
+                        <div id="${explanationDivId}" class="mt-2 text-sm"></div>
+                    `;
+                }
+
+                resultItem.innerHTML = `
+                    <p class="font-semibold text-lg mb-2">${index + 1}. ${q.question}</p>
+                    <p class="text-gray-700">إجابتك: <span class="${isCorrect ? 'text-green-700' : 'text-red-700'} font-medium">${userAnswers[index] || 'لم يتم الإجابة'}</span> ${isCorrect ? '✅' : '❌'}</p>
+                    ${!isCorrect ? `<p class="text-green-700">الإجابة الصحيحة: <span class="font-medium">${q.correctAnswer}</span></p>` : ''}
+                    ${explanationButtonHtml}
+                `;
+                resultsDetails.appendChild(resultItem);
+            });
+        }
+
+        function restartExam() {
+            resultsSection.classList.add('section-hidden');
+            introSection.classList.remove('section-hidden');
+            currentQuestionPageIndex = 0;
+            userAnswers = [];
+            score = 0;
+            stopTimer(); // Ensure timer is stopped if restarting from results
+            timeLeft = examDuration; // Reset time for next exam
+            timerDisplay.textContent = formatTime(timeLeft); // Update display
+        }
+
+        // Event Listeners
+        startExamBtn.addEventListener('click', startExam);
+        nextQuestionBtn.addEventListener('click', nextQuestionPage);
+        submitExamBtn.addEventListener('click', nextQuestionPage); // Submit uses same logic as next to process last page
+        prevQuestionBtn.addEventListener('click', prevQuestionPage);
+        restartExamBtn.addEventListener('click', restartExam);
+
+        // Initial timer display
+        timerDisplay.textContent = formatTime(examDuration);
+    </script>
+</body>
+</html>
