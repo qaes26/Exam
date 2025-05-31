@@ -5,11 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>امتحان إدارة قواعد البيانات</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Visualization & Content Choices:
-        - Report Info: Core concepts from Chapter 5 (Information Accuracy, Data Hierarchy, Traditional Problems, DBMS Models, Components) -> Goal: Assess Understanding -> Viz: Textual questions with radio button choices. -> Interaction: Click radio button to select, click "Next" to advance, click "Submit" to finish, click "Previous" to go back. -> Justification: Standard quiz format for knowledge assessment, enhanced with multi-question pages and navigation for better user experience. Method: HTML, Tailwind, Vanilla JS.
-        - Report Info: Exam Results -> Goal: Inform -> Viz: Score display, list of questions with user's answer and correct answer. -> Interaction: Click "شرح الإجابة الصحيحة ✨" button for LLM-generated explanation of incorrect answers. -> Justification: Provides clear feedback on performance and enhances learning through AI-powered explanations. Method: HTML, Tailwind, Vanilla JS, Gemini API.
-        - CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
-
     <style>
         body {
             font-family: 'system-ui', 'sans-serif';
@@ -23,6 +18,11 @@
     <div class="bg-white shadow-lg rounded-lg p-6 md:p-8 w-full max-w-2xl">
 
         <div id="intro-section" class="text-center">
+            <img src="https://upload.wikimedia.org/wikipedia/ar/thumb/6/66/%D8%B4%D8%B9%D8%A7%D8%B1_%D8%AC%D8%A7%D9%85%D8%B9%D8%A9_%D8%A5%D8%B1%D8%A8%D8%AF_%D8%A7%D9%84%D8%A3%D9%87%D9%84%D9%8A%D8%A91.jpeg/131px-%D8%B4%D8%B9%D8%A7%D8%B1_%D8%AC%D8%A7%D9%85%D8%B9%D8%A9_%D8%A5%D8%B1%D8%A8%D8%AF_%D8%A7%D9%84%D8%A3%D9%87%D9%84%D9%8A%D8%A91.jpeg"
+                 alt="شعار جامعة إربد الأهلية"
+                 class="mx-auto mb-6 max-h-32 object-contain"
+                 onerror="this.onerror=null;this.src='https://via.placeholder.com/150?text=Logo+Not+Found';"
+            >
             <h1 class="text-3xl font-bold text-indigo-700 mb-2">امتحان في إدارة قواعد البيانات</h1>
             <p class="text-md text-gray-500 mb-4">من إعداد الطالب: قيس طلال غالب الجازي</p>
             <p class="text-lg text-gray-600 mb-6">اختبر فهمك للمفاهيم الأساسية في الفصل الخامس.</p>
